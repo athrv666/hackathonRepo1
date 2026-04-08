@@ -22,6 +22,9 @@ function App() {
         if (state.uiDraft !== undefined) {
           sessionStorage.setItem("uiDraft", JSON.stringify(state.uiDraft));
         }
+        if (state.comparisonCache !== undefined) {
+          sessionStorage.setItem("comparisonCache", JSON.stringify(state.comparisonCache));
+        }
       } catch {
         // ignore hydration failures
       }

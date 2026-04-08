@@ -61,20 +61,63 @@ function buildTempProfile(params: SimulationParams, result: SimulationResult) {
 
 export function ComparisonScreen() {
   const navigate = useNavigate();
-  const currentParams = JSON.parse(sessionStorage.getItem("simulationParams") || "null") as SimulationParams | null;
-  const currentResult = JSON.parse(sessionStorage.getItem("simulationResult") || "null") as SimulationResult | null;
+  const currentParamsRaw = sessionStorage.getItem("simulationParams") || "null";
+  const currentResultRaw = sessionStorage.getItem("simulationResult") || "null";
+
+  // Memoize parsing so effects don't re-run on every render.
+  const currentParams = useMemo(() => {
+    try {
+      return JSON.parse(currentParamsRaw) as SimulationParams | null;
+    } catch {
+      return null;
+    }
+  }, [currentParamsRaw]);
+
+  const currentResult = useMemo(() => {
+    try {
+      return JSON.parse(currentResultRaw) as SimulationResult | null;
+    } catch {
+      return null;
+    }
+  }, [currentResultRaw]);
 
   const [idealResult, setIdealResult] = useState<SimulationResult | null>(null);
   const [idealMaterial, setIdealMaterial] = useState<string | null>(null);
   const [bestMaterial, setBestMaterial] = useState<{ name: string; k: number } | null>(null);
   const [idealParams, setIdealParams] = useState<SimulationParams | null>(null);
   const [error, setError] = useState<string>("");
+  const [isConfigBApplied, setIsConfigBApplied] = useState(false);
+
+  const cacheKey = useMemo(() => `v1:${currentParamsRaw}`, [currentParamsRaw]);
+
+  const cached = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem("comparisonCache");
+      if (!raw) return null;
+      const obj = JSON.parse(raw) as any;
+      return obj?.[cacheKey] ?? null;
+    } catch {
+      return null;
+    }
+  }, [cacheKey]);
+
+  // If cached, hydrate immediately (eliminates loading).
+  useEffect(() => {
+    if (!cached) return;
+    setBestMaterial(cached.bestMaterial ?? null);
+    setIdealMaterial(cached.idealMaterial ?? null);
+    setIdealParams(cached.idealParams ?? null);
+    setIdealResult(cached.idealResult ?? null);
+    setError("");
+  }, [cached]);
 
   useEffect(() => {
     let cancelled = false;
     async function run() {
       try {
         if (!currentParams) throw new Error("Missing current simulation inputs.");
+        if (cached) return;
+
         const materials = await apiFetch<Record<string, number>>("/api/materials");
         const entries = Object.entries(materials || {}).filter(([, v]) => typeof v === "number" && v > 0);
         if (!entries.length) throw new Error("No materials available in backend materials config.");
@@ -102,9 +145,27 @@ export function ComparisonScreen() {
         });
 
         if (cancelled) return;
+        setIsConfigBApplied(false);
         setIdealParams(idealParams);
         setIdealMaterial(bestName);
         setIdealResult(res);
+
+        // Persist cache locally and to backend state (survives refresh).
+        const entry = {
+          bestMaterial: { name: bestName, k: bestK },
+          idealMaterial: bestName,
+          idealParams,
+          idealResult: res,
+        };
+        try {
+          const prevRaw = sessionStorage.getItem("comparisonCache");
+          const prev = prevRaw ? JSON.parse(prevRaw) : {};
+          const next = { ...(prev || {}), [cacheKey]: entry };
+          sessionStorage.setItem("comparisonCache", JSON.stringify(next));
+          apiFetch("/api/state", { method: "PUT", json: { comparisonCache: next } }).catch(() => {});
+        } catch {
+          // ignore caching failures
+        }
       } catch (e: any) {
         if (cancelled) return;
         setError(e?.details?.error || e?.message || "Failed to compute ideal configuration");
@@ -115,7 +176,7 @@ export function ComparisonScreen() {
     return () => {
       cancelled = true;
     };
-  }, [currentParams]);
+  }, [currentParamsRaw, cacheKey, cached]);
 
   const derived = useMemo(() => {
     if (!currentParams || !currentResult || !idealResult) return null;
@@ -148,22 +209,10 @@ export function ComparisonScreen() {
 
   const usage = useMemo(() => readMaterialUsageStats(), []);
 
-  const handleApplyConfigB = async () => {
+  const handleApplyConfigB = () => {
     if (!idealParams || !idealResult) return;
-
-    sessionStorage.setItem("simulationParams", JSON.stringify(idealParams));
-    sessionStorage.setItem("simulationResult", JSON.stringify(idealResult));
-
-    try {
-      await apiFetch("/api/state", {
-        method: "PUT",
-        json: { simulationParams: idealParams, simulationResult: idealResult },
-      });
-    } catch {
-      // ignore persistence failures
-    }
-
-    navigate("/results");
+    // Apply only within Compare (show green line + optimized values).
+    setIsConfigBApplied(true);
   };
 
   return (
@@ -366,14 +415,16 @@ export function ComparisonScreen() {
                   name="Configuration A (Current)"
                   dot={false}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="configB" 
-                  stroke="#22c55e" 
-                  strokeWidth={3}
-                  name="Configuration B (Optimized)"
-                  dot={false}
-                />
+                {isConfigBApplied && (
+                  <Line
+                    type="monotone"
+                    dataKey="configB"
+                    stroke="#22c55e"
+                    strokeWidth={3}
+                    name="Configuration B (Optimized)"
+                    dot={false}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -423,9 +474,9 @@ export function ComparisonScreen() {
               <Button
                 className="bg-[#3A86FF] hover:bg-[#2A76EF] text-white px-8"
                 onClick={handleApplyConfigB}
-                disabled={!idealParams || !idealResult}
+                disabled={!idealParams || !idealResult || isConfigBApplied}
               >
-                Apply Configuration B
+                {isConfigBApplied ? "Configuration B Applied" : "Apply Configuration B"}
               </Button>
             </div>
           </Card>

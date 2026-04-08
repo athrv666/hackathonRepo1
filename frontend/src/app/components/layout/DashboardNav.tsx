@@ -18,6 +18,7 @@ export function DashboardNav() {
     sessionStorage.removeItem("simulationParams");
     sessionStorage.removeItem("simulationResult");
     sessionStorage.removeItem("uiDraft");
+    sessionStorage.removeItem("comparisonCache");
     window.location.href = "/dashboard";
   };
 

@@ -1,15 +1,103 @@
 {
   "uiDraft": {
-    "hotTemp": "",
-    "coldTemp": "",
+    "hotTemp": "200",
+    "coldTemp": "19",
     "layers": [
       {
         "id": "1",
-        "thickness": "",
-        "conductivity": "",
+        "thickness": "20",
+        "conductivity": "2",
         "unit": "cm"
       }
     ]
   },
-  "updatedAt": "2026-04-08T08:59:19.660Z"
+  "updatedAt": "2026-04-08T10:21:36.524Z",
+  "simulationParams": {
+    "layers": [
+      {
+        "thickness": 0.2,
+        "k": 0.04,
+        "material": "insulation"
+      }
+    ],
+    "boundary": {
+      "T_left": 200,
+      "T_inf": 19,
+      "h": 10
+    },
+    "area": 1,
+    "totalThickness": 0.2
+  },
+  "simulationResult": {
+    "resistance": 5.1,
+    "heat_flux": 35.490196078431374,
+    "temperatures": [
+      200,
+      22.54901960784312
+    ]
+  },
+  "comparisonCache": {
+    "v1:{\"layers\":[{\"thickness\":0.2,\"k\":2}],\"boundary\":{\"T_left\":200,\"T_inf\":19,\"h\":10},\"area\":1,\"totalThickness\":0.2}": {
+      "bestMaterial": {
+        "name": "insulation",
+        "k": 0.04
+      },
+      "idealMaterial": "insulation",
+      "idealParams": {
+        "layers": [
+          {
+            "thickness": 0.2,
+            "k": 0.04,
+            "material": "insulation"
+          }
+        ],
+        "boundary": {
+          "T_left": 200,
+          "T_inf": 19,
+          "h": 10
+        },
+        "area": 1,
+        "totalThickness": 0.2
+      },
+      "idealResult": {
+        "resistance": 5.1,
+        "heat_flux": 35.490196078431374,
+        "temperatures": [
+          200,
+          22.54901960784312
+        ]
+      }
+    },
+    "v1:{\"layers\":[{\"thickness\":0.2,\"k\":0.04,\"material\":\"insulation\"}],\"boundary\":{\"T_left\":200,\"T_inf\":19,\"h\":10},\"area\":1,\"totalThickness\":0.2}": {
+      "bestMaterial": {
+        "name": "insulation",
+        "k": 0.04
+      },
+      "idealMaterial": "insulation",
+      "idealParams": {
+        "layers": [
+          {
+            "thickness": 0.2,
+            "k": 0.04,
+            "material": "insulation"
+          }
+        ],
+        "boundary": {
+          "T_left": 200,
+          "T_inf": 19,
+          "h": 10
+        },
+        "area": 1,
+        "totalThickness": 0.2
+      },
+      "idealResult": {
+        "resistance": 5.1,
+        "heat_flux": 35.490196078431374,
+        "temperatures": [
+          200,
+          22.54901960784312
+        ]
+      }
+    }
+  }
 }

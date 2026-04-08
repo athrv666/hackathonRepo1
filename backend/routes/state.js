@@ -20,7 +20,7 @@ router.put("/state", async (req, res, next) => {
       return res.status(400).json({ error: "Body must be a JSON object" });
     }
 
-    const allowed = ["simulationParams", "simulationResult", "reportSnapshot", "uiDraft"];
+    const allowed = ["simulationParams", "simulationResult", "reportSnapshot", "uiDraft", "comparisonCache"];
     const partial = {};
     for (const k of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, k)) partial[k] = req.body[k];
